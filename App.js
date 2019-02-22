@@ -59,10 +59,12 @@ export default class App extends Component {
 
   render() {
     return (
-      <View>
+      <View style={{ flex: 1, justifyContent: 'space-between' }}>
         <BoardComponent key={this.state.boardHash} game={this.state.game} />
-        <Text>Flags left: {this.state.game.flagsLeft}</Text>
-        {this.gameOverLayout()}
+        <Text style={{ flex: 1 }}>Flags left: {this.state.flagsLeft}</Text>
+        <View style={{ flex: 1 }}>
+          {this.gameOverLayout()}
+        </View>
       </View>)
   }
 }

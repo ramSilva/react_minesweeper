@@ -1,6 +1,7 @@
 'use strict'
 
 import React, { Component } from 'react';
+import { styles } from './Board'
 import { Dimensions, TouchableWithoutFeedback, StyleSheet, Text, View, ScrollView } from 'react-native';
 
 export class Tile {
@@ -56,9 +57,9 @@ export default class TileComponent extends Component {
     }
 
     tileContent = () => {
-        if(!this.tile.revealed || this.tile.mine){
+        if (!this.tile.revealed || this.tile.mine) {
             return ""
-        }else{
+        } else {
             return this.tile.getAdjacentBombs()
         }
     }
@@ -69,12 +70,10 @@ export default class TileComponent extends Component {
                 onPress={() => {
                     this.props.onPress(this.props.x, this.props.y)
                 }}
-            
+
                 onLongPress={() => {
                     this.props.onLongPress(this.props.x, this.props.y)
-                }}
-                
-                delayLongPress={200}>
+                }}>
                 <Text style={[styles.cell, { backgroundColor: this.tile.getColor() }]}>
                     {this.tileContent()}
                 </Text>
@@ -82,14 +81,3 @@ export default class TileComponent extends Component {
         )
     }
 }
-
-
-const styles = StyleSheet.create({
-    cell: {
-        textAlign: 'center',
-        height: 24,
-        width: 24,
-        margin: 1
-    }
-})
-

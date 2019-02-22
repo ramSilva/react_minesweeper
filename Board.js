@@ -204,17 +204,22 @@ export default class BoardComponent extends Component {
 
     render() {
         return (
-            <ScrollView style={styles.board}>{this.state.boardComponent}</ScrollView>
+            <View style={styles.board}>{this.state.boardComponent}</View>
         )
     }
 }
 
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
     board: {
-        width: 340,
-        height: 340,
+        flex: 4
     },
     row: {
+        flex: 1,
         flexDirection: 'row'
+    },
+    cell: {
+        flex: 1,
+        textAlign: 'center',
+        margin: 1
     }
 })
