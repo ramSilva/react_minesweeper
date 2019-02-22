@@ -9,11 +9,53 @@ export class Game {
         this.rows = rows
         this.cols = cols
         this.mines = mines
+        this.resetState()
         this.startGame()
     }
 
+    resetState = () => {
+        this.flagsLeft = this.mines
+        this.minesLeft = this.mines
+        this.lost = false
+        this.won = false
+        this.board = []
+        this.checked = []
+    }
+
+    boardHash = () => {
+        let hash = ""
+        for (let i = 0; i < this.rows; i++) {
+            for (let j = 0; j < this.cols; j++) {
+                let tile = this.board[i][j]
+                hash += tile.revealed
+                hash += tile.mine
+                hash += tile.flagged
+            }
+        }
+
+        return hash
+    }
+
+    loseGame = () => {
+        this.lost = true
+        this.onGameLost()
+    }
+
+    checkGameWon = () => {
+        if (this.minesLeft == 0) {
+            this.won = true
+            this.onGameWon()
+        }
+    }
+
+    canPlay = () => {
+        return !(this.lost || this.won)
+    }
+
     startGame = () => {
+        this.resetState()
         let board = []
+
         for (let i = 0; i < this.rows; i++) {
             let row = []
             for (let j = 0; j < this.cols; j++) {
@@ -38,31 +80,90 @@ export class Game {
             }
         }
 
-        this.board = board
-
         for (let i = 0; i < this.rows; i++) {
             for (let j = 0; j < this.cols; j++) {
-                let tile = this.board[i][j]
-                tile.setNeighbours(this.calculateNeighbours(i, j))
-                this.board[i][j] = tile
+                let tile = board[i][j]
+                tile.setNeighbours(this._calculateNeighbours(board, i, j))
+                board[i][j] = tile
             }
         }
+
+        this.board = board
     }
 
-    calculateNeighbours = (x, y) => {
-        let maxRows = this.board.length
-        let maxCols = this.board[0].length
+    _calculateNeighbours = (board, x, y) => {
+        let maxRows = board.length
+        let maxCols = board[0].length
         let neighbours = []
         for (let i = x - 1; i <= x + 1; i++) {
             for (let j = y - 1; j <= y + 1; j++) {
                 if ((i >= 0 && i < maxRows) && (j >= 0 && j < maxCols)) {
                     if ((i != x && j != y) || (i == x && j != y) || (i != x && j == y)) {
-                        neighbours.push(this.board[i][j])
+                        neighbours.push(board[i][j])
                     }
                 }
             }
         }
         return neighbours
+    }
+
+    calculateNeighbours = (x, y) => {
+        return this._calculateNeighbours(this.board, x, y)
+    }
+
+    revealTile = (x, y) => {
+        if (!this.canPlay()) {
+            return
+        }
+
+        let tile = this.board[x][y]
+        if (tile.flagged) {
+            return
+        }
+
+        let key = x.toString() + y.toString()
+        if (this.checked.includes(key)) {
+            return
+        }
+        this.checked.push(key)
+
+        this.lost = tile.reveal()
+        if (this.lost) {
+            this.loseGame()
+        }
+
+        if (tile.getAdjacentBombs() == 0) {
+            tile.neighbours.forEach(neighbour => {
+                this.revealTile(neighbour.x, neighbour.y)
+            });
+        }
+    }
+
+    flagTile = (x, y) => {
+        if (!this.canPlay()) {
+            return
+        }
+
+        let tile = this.board[x][y]
+        if (tile.flagged) {
+            if (tile.isCoveredMine()) {
+                this.minesLeft++
+            }
+            this.flagsLeft++
+        } else {
+            if (this.flagsLeft <= 0) {
+                return
+            }
+            this.flagsLeft--
+        }
+        tile.flag()
+        this.onFlagsChanged(this.flagsLeft)
+
+        if (tile.isCoveredMine()) {
+            this.minesLeft--
+        }
+
+        this.checkGameWon()
     }
 }
 
@@ -72,7 +173,6 @@ export default class BoardComponent extends Component {
         this.state = {
             boardComponent: this.createBoardComponent()
         }
-        this.checked = []
     }
 
     createBoardComponent = () => {
@@ -83,7 +183,7 @@ export default class BoardComponent extends Component {
             for (let j = 0; j < board[i].length; j++) {
                 const tile = board[i][j]
                 cols.push(
-                    <TileComponent key={j} x={i} y={j} tile={tile} onPress={this.revealTile} />
+                    <TileComponent key={j} x={i} y={j} tile={tile} onPress={this.revealTile} onLongPress={this.flagTile} />
                 );
             }
             rows.push(<View style={styles.row} key={i}>{cols}</View>)
@@ -93,25 +193,16 @@ export default class BoardComponent extends Component {
     }
 
     revealTile = (x, y) => {
-        let key = x.toString() + y.toString()
-        if (this.checked.includes(key)) {
-            return
-        }
-        this.checked.push(key)
+        this.props.game.revealTile(x, y)
+        this.setState({ boardComponent: this.createBoardComponent() })
+    }
 
-        let tile = this.props.game.board[x][y]
-        tile.reveal()
-
-        if (tile.getAdjacentBombs() == 0) {
-            tile.neighbours.forEach(neighbour => {
-                this.revealTile(neighbour.x, neighbour.y)
-            });
-        }
+    flagTile = (x, y) => {
+        this.props.game.flagTile(x, y)
         this.setState({ boardComponent: this.createBoardComponent() })
     }
 
     render() {
-        console.log("hello")
         return (
             <ScrollView style={styles.board}>{this.state.boardComponent}</ScrollView>
         )

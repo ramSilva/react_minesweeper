@@ -1,7 +1,7 @@
 'use strict'
 
 import React, { Component } from 'react';
-import { Dimensions, TouchableHighlight, StyleSheet, Text, View, ScrollView } from 'react-native';
+import { Dimensions, TouchableWithoutFeedback, StyleSheet, Text, View, ScrollView } from 'react-native';
 
 export class Tile {
     constructor(x, y, mine) {
@@ -37,30 +37,48 @@ export class Tile {
 
     reveal = () => {
         this.revealed = true
+        return this.mine
     }
 
     flag = () => {
         this.flagged = !this.flagged
+    }
+
+    isCoveredMine = () => {
+        return this.mine && this.flagged
     }
 }
 
 export default class TileComponent extends Component {
     constructor(props) {
         super(props)
-        this.state = {
-            revealed: false,
-            flagged: false
-        }
         this.tile = props.tile
+    }
+
+    tileContent = () => {
+        if(!this.tile.revealed || this.tile.mine){
+            return ""
+        }else{
+            return this.tile.getAdjacentBombs()
+        }
     }
 
     render() {
         return (
-            <TouchableHighlight onPress={() => { this.props.onPress(this.props.x, this.props.y) }} onLongPress={this.flag}>
+            <TouchableWithoutFeedback
+                onPress={() => {
+                    this.props.onPress(this.props.x, this.props.y)
+                }}
+            
+                onLongPress={() => {
+                    this.props.onLongPress(this.props.x, this.props.y)
+                }}
+                
+                delayLongPress={200}>
                 <Text style={[styles.cell, { backgroundColor: this.tile.getColor() }]}>
-                    {this.tile.getAdjacentBombs()}
+                    {this.tileContent()}
                 </Text>
-            </TouchableHighlight>
+            </TouchableWithoutFeedback>
         )
     }
 }
@@ -69,7 +87,6 @@ export default class TileComponent extends Component {
 const styles = StyleSheet.create({
     cell: {
         textAlign: 'center',
-        flex: 1,
         height: 24,
         width: 24,
         margin: 1
